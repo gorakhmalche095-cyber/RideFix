@@ -3,150 +3,204 @@
 <head>
 <meta charset="UTF-8">
 <title>RideFix Register</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
 <style>
 body {
   margin: 0;
-  font-family: Arial;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: #000;
+  height: 100vh;
   overflow: hidden;
 }
 
-/* 🔥 FULL BACKGROUND IMAGE */
 .top {
-  height: 100vh;
-  background: url('Picsart_26-04-15_11-19-14-794.jpg') no-repeat center center/cover;
-  position: relative;
-}
-
-/* DARK OVERLAY (optional but pro look) */
-.top::after {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.3);
-  top: 0;
-  left: 0;
-}
-
-/* BOTTOM CARD */
-.bottom {
   position: fixed;
-  bottom: -100%;
-  width: 100%;
-  height: 75vh;
-  background: white;
-  border-radius: 25px 25px 0 0;
-  padding: 20px;
-  box-sizing: border-box;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  animation: slideUp 0.9s ease-out forwards;
-  animation-delay: 0.9s;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: url('bg.jpg') no-repeat center center/cover;
+  z-index: 1;
 }
 
-@keyframes slideUp {
-  to {
-    bottom: 0;
-  }
+.top::after {
+  content: ""; position: absolute; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4);
 }
 
-/* CONTENT */
-.content {
-  width: 100%;
-  max-width: 380px;
+.bottom {
+  position: fixed; bottom: 0; left: 0; width: 100%; height: 80vh;
+  background: white; border-radius: 30px 30px 0 0; padding: 30px 20px;
+  box-sizing: border-box; z-index: 10;
+  transform: translateY(100%);
+  animation: slideLock 0.6s ease-out forwards;
+  animation-delay: 0.3s;
 }
 
-/* TITLE */
-.title {
-  font-weight: 800;
-  font-size: 22px;
-  margin-bottom: 20px;
-  text-align: center;
+@keyframes slideLock { to { transform: translateY(0); } }
+
+.content { width: 100%; max-width: 380px; margin: 0 auto; }
+.title { font-weight: 900; font-size: 22px; margin-bottom: 35px; color: #000; text-align: center; }
+
+.input-container {
+  border: 2px solid #1db954; border-radius: 15px; padding: 5px 15px;
+  position: relative; display: flex; align-items: center; margin-bottom: 10px;
 }
 
-/* INPUT */
-.input-wrapper {
-  display: flex;
-  align-items: center;
-  border: 2px solid #1db954;
-  border-radius: 12px;
-  padding: 0 10px;
-}
-
-.code {
-  font-weight: 600;
-  margin-right: 8px;
+.label-text {
+  position: absolute; top: -12px; left: 20px; background: white;
+  padding: 0 8px; color: #1db954; font-size: 13px; font-weight: 700;
 }
 
 input {
-  flex: 1;
-  padding: 15px 10px;
-  border: none;
-  outline: none;
-  font-size: 16px;
+  flex: 1; padding: 15px 0; border: none; outline: none;
+  font-size: 18px; font-weight: 600; background: transparent;
 }
 
-/* BUTTON */
+#otpSection { display: none; }
+
+.otp-box {
+  display: flex; justify-content: space-between; gap: 10px; margin-top: 20px;
+}
+
+.otp-input {
+  width: 50px; height: 55px; border: 2px solid #ddd; border-radius: 12px;
+  text-align: center; font-size: 22px; font-weight: 700; color: #1db954;
+}
+
+.action-area {
+  position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+  width: calc(100% - 40px); max-width: 380px; z-index: 20;
+}
+
 button {
-  width: 100%;
-  padding: 15px;
-  margin-top: 20px;
-  background: #1db954;
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
+  width: 100%; padding: 16px; background: #1db954; border: none;
+  border-radius: 15px; color: white; font-size: 18px; font-weight: 700;
+  cursor: pointer; box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3);
 }
 
-/* TERMS */
-.terms {
-  font-size: 12px;
-  color: gray;
-  margin-top: 15px;
-  text-align: center;
-}
-
-.terms span {
-  color: #1db954;
-  font-weight: 600;
-}
+.terms { font-size: 12px; color: #777; margin-top: 10px; text-align: center; }
+.terms a { color: #1db954; font-weight: 600; text-decoration: none; }
 </style>
 </head>
 
 <body>
 
-<!-- 🔥 FULL IMAGE BACKGROUND -->
 <div class="top"></div>
 
-<!-- CARD -->
+<div id="recaptcha-container"></div>
+
 <div class="bottom">
   <div class="content">
+    <h3 class="title" id="mainTitle"><b>Enter Your Mobile Number</b></h3>
 
-    <h3 class="title">Enter Your Mobile Number</h3>
-
-    <div class="input-wrapper">
-      <span class="code">+91</span>
-      <input type="tel" placeholder="Enter mobile number">
+    <div id="mobileSection">
+      <div class="input-container">
+        <span class="label-text">Mobile Number</span>
+        <span style="font-size: 20px; margin-right: 8px;">🇮🇳</span>
+        <span style="font-weight: 700; margin-right: 5px;">+91</span>
+        <input type="tel" id="phoneInput" placeholder="Enter number" maxlength="10">
+      </div>
     </div>
 
-    <button>Continue</button>
-
-    <p class="terms">
-      By clicking, I accept the 
-      <span>Terms of Service</span> 
-      and 
-      <span>Privacy Policy</span>
-    </p>
-
+    <div id="otpSection">
+      <p style="text-align: center; font-size: 14px; color: #555;">Sent to +91 <span id="displayNum"></span></p>
+      <div class="otp-box">
+        <input type="tel" class="otp-input" maxlength="1">
+        <input type="tel" class="otp-input" maxlength="1">
+        <input type="tel" class="otp-input" maxlength="1">
+        <input type="tel" class="otp-input" maxlength="1">
+        <input type="tel" class="otp-input" maxlength="1">
+        <input type="tel" class="otp-input" maxlength="1">
+      </div>
+      <p class="resend-text">Didn't receive code? <span style="color: #1db954; font-weight: 700; cursor: pointer;">Resend</span></p>
+    </div>
   </div>
 </div>
+
+<div class="action-area" id="footerBtn">
+  <button id="mainBtn" onclick="handleAuth()">Continue</button>
+  <p class="terms" id="termsText">
+    By clicking, I accept the <a href="termsandcondition.html">Terms & Policy</a>
+  </p>
+</div>
+
+<script>
+  // 🔥 STEP 3: Firebase Initialization (Tumchya screenshot madhli details)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDgu0d_MxEFHGAJNLPakW6vR-xURI1g6fw",
+    authDomain: "ridefix-5a63c.firebaseapp.com",
+    projectId: "ridefix-5a63c",
+    storageBucket: "ridefix-5a63c.appspot.com",
+    messagingSenderId: "42112930845",
+    appId: "1:42112930845:web:49ec66d4b5259a185722f4"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  // reCAPTCHA Invisible set kela aahe
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+    'size': 'invisible'
+  });
+
+  let currentState = "MOBILE"; // MOBILE or OTP
+
+  function handleAuth() {
+    const phoneInput = document.getElementById('phoneInput');
+    const number = phoneInput.value;
+
+    if (currentState === "MOBILE") {
+      if (number.length === 10) {
+        const fullNumber = "+91" + number;
+        const appVerifier = window.recaptchaVerifier;
+
+        auth.signInWithPhoneNumber(fullNumber, appVerifier)
+          .then((confirmationResult) => {
+            window.confirmationResult = confirmationResult;
+            
+            // UI Update
+            document.getElementById('mobileSection').style.display = 'none';
+            document.getElementById('otpSection').style.display = 'block';
+            document.getElementById('displayNum').innerText = number;
+            document.getElementById('mainTitle').innerHTML = "<b>Verify OTP</b>";
+            document.getElementById('mainBtn').innerText = "Verify & Login";
+            document.getElementById('termsText').style.display = 'none';
+            currentState = "OTP";
+          }).catch((error) => {
+            alert("Error sending SMS: " + error.message);
+          });
+      } else {
+        alert("Please enter a valid 10-digit number");
+      }
+    } else {
+      // OTP Verification Logic
+      let otp = "";
+      document.querySelectorAll('.otp-input').forEach(input => otp += input.value);
+      
+      if (otp.length === 6) {
+        window.confirmationResult.confirm(otp)
+          .then((result) => {
+            alert("Login Successful!");
+            window.location.href = "home.html"; // Login jhalya var hyer page la ja
+          }).catch((error) => {
+            alert("Invalid OTP. Try again.");
+          });
+      } else {
+        alert("Please enter 6-digit OTP");
+      }
+    }
+  }
+
+  // OTP focus logic
+  const inputs = document.querySelectorAll('.otp-input');
+  inputs.forEach((input, index) => {
+    input.addEventListener('input', () => {
+      if (input.value && index < inputs.length - 1) inputs[index + 1].focus();
+    });
+  });
+</script>
 
 </body>
 </html>
