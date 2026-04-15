@@ -17,11 +17,12 @@
         .title { font-weight: 900; font-size: 22px; margin-bottom: 35px; color: #000; text-align: center; }
         .input-container { border: 2px solid #1db954; border-radius: 15px; padding: 5px 15px; position: relative; display: flex; align-items: center; margin-bottom: 10px; }
         .label-text { position: absolute; top: -12px; left: 20px; background: white; padding: 0 8px; color: #1db954; font-size: 13px; font-weight: 700; }
-        input { flex: 1; padding: 15px 0; border: none; outline: none; font-size: 18px; font-weight: 600; background: transparent; width: 100%; }
+        input { flex: 1; padding: 15px 0; border: none; outline: none; font-size: 18px; font-weight: 600; background: transparent; width: 100%; color: #000; }
         #otpSection { display: none; }
         .otp-input { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 15px; text-align: center; font-size: 22px; font-weight: 700; color: #1db954; outline: none; letter-spacing: 5px; }
         .action-area { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 380px; z-index: 20; }
-        button { width: 100%; padding: 16px; background: #1db954; border: none; border-radius: 15px; color: white; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3); }
+        button { width: 100%; padding: 16px; background: #1db954; border: none; border-radius: 15px; color: white; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3); transition: 0.3s; }
+        button:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
         #recaptcha-container { margin-top: 10px; }
     </style>
 </head>
@@ -38,13 +39,13 @@
                 <span class="label-text">Mobile Number</span>
                 <span style="font-size: 20px; margin-right: 8px;">🇮🇳</span>
                 <span style="font-weight: 700; margin-right: 5px;">+91</span>
-                <input type="tel" id="phoneInput" placeholder="Enter number" maxlength="10">
+                <input type="tel" id="phoneInput" placeholder="7066xxxxxx" maxlength="10">
             </div>
             <div id="recaptcha-container"></div>
         </div>
 
         <div id="otpSection">
-            <p style="text-align: center; font-size: 14px; color: #555;">Enter 6-digit OTP sent to your phone</p>
+            <p style="text-align: center; font-size: 14px; color: #555;">Enter 6-digit OTP sent via SMS</p>
             <input type="tel" id="otpInput" class="otp-input" placeholder="000000" maxlength="6">
         </div>
     </div>
@@ -55,24 +56,26 @@
 </div>
 
 <script>
-    // तुझा नवीन Config (RideFix-Real)
+    // तुमची नवीन Config (RideFix-Real)
     const firebaseConfig = {
-  apiKey: "AIzaSyClcel-N682oF2GZYT6UBcJ_NofMy1rTRA",
-  authDomain: "ridefix-real.firebaseapp.com",
-  projectId: "ridefix-real",
-  storageBucket: "ridefix-real.firebasestorage.app",
-  messagingSenderId: "637168003339",
-  appId: "1:637168003339:web:1ba1609b96997e3905da0e"
-};
-
+        apiKey: "AIzaSyClcel-N682oF2GZYT6UBcJ_NofMy1rTRA",
+        authDomain: "ridefix-real.firebaseapp.com",
+        projectId: "ridefix-real",
+        storageBucket: "ridefix-real.firebasestorage.app",
+        messagingSenderId: "637168003339",
+        appId: "1:637168003339:web:1ba1609b96997e3905da0e"
+    };
 
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    // ReCAPTCHA सेटअप - इथे 'auth' पास करणे महत्वाचे आहे
+    // ReCAPTCHA सेटअप - 'auth' पॅरामीटर जोडला आहे
     window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        'size': 'invisible'
+        'size': 'invisible',
+        'callback': (response) => {
+            console.log("reCAPTCHA solved");
+        }
     }, auth);
 
     let confirmationResult;
@@ -84,6 +87,9 @@
         
         if (currentState === "MOBILE") {
             if (phoneValue.length === 10) {
+                btn.disabled = true;
+                btn.innerText = "Sending SMS...";
+                
                 const phone = "+91" + phoneValue;
                 const appVerifier = window.recaptchaVerifier;
 
@@ -93,27 +99,39 @@
                         document.getElementById('mobileSection').style.display = 'none';
                         document.getElementById('otpSection').style.display = 'block';
                         document.getElementById('mainTitle').innerHTML = "<b>Verify OTP</b>";
+                        btn.disabled = false;
                         btn.innerText = "Verify & Login";
                         currentState = "OTP";
                     }).catch((error) => {
-                        console.error(error);
-                        alert("Error: " + error.message);
+                        btn.disabled = false;
+                        btn.innerText = "Continue";
+                        console.error("Auth Error:", error);
+                        alert("Error: " + error.message + "\n\nTip: Make sure India is 'Allowed' in SMS Region Policy.");
+                        // reCAPTCHA रिलोड करणे जर एरर आला तर
+                        window.recaptchaVerifier.render().then(function(widgetId) {
+                            grecaptcha.reset(widgetId);
+                        });
                     });
             } else {
-                alert("Please enter 10 digit number.");
+                alert("Please enter a valid 10-digit number.");
             }
         } else {
             const otp = document.getElementById('otpInput').value;
             if (otp.length === 6) {
+                btn.disabled = true;
+                btn.innerText = "Verifying...";
+                
                 confirmationResult.confirm(otp)
                     .then(() => {
-                        alert("Login Success! 🚀");
+                        alert("Login Successful! 🚀");
                         window.location.href = "home.html";
                     }).catch((error) => {
-                        alert("Wrong OTP! Try again.");
+                        btn.disabled = false;
+                        btn.innerText = "Verify & Login";
+                        alert("Wrong OTP! Please check and try again.");
                     });
             } else {
-                alert("Please enter 6 digit OTP.");
+                alert("Please enter 6-digit OTP.");
             }
         }
     }
@@ -121,3 +139,4 @@
 
 </body>
 </html>
+
