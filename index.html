@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RideFix Register</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #000; height: 100vh; overflow: hidden; }
+        .top { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('bg.jpg') no-repeat center center/cover; z-index: 1; }
+        .top::after { content: ""; position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.4); }
+        .bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: 80vh; background: white; border-radius: 30px 30px 0 0; padding: 30px 20px; box-sizing: border-box; z-index: 10; transform: translateY(0); animation: slideUp 0.6s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .content { width: 100%; max-width: 380px; margin: 0 auto; }
+        .title { font-weight: 900; font-size: 22px; margin-bottom: 35px; color: #000; text-align: center; }
+        .input-container { border: 2px solid #1db954; border-radius: 15px; padding: 5px 15px; position: relative; display: flex; align-items: center; margin-bottom: 10px; }
+        .label-text { position: absolute; top: -12px; left: 20px; background: white; padding: 0 8px; color: #1db954; font-size: 13px; font-weight: 700; }
+        input { flex: 1; padding: 15px 0; border: none; outline: none; font-size: 18px; font-weight: 600; background: transparent; width: 100%; }
+        #otpSection { display: none; }
+        .action-area { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 380px; z-index: 20; }
+        button { width: 100%; padding: 16px; background: #1db954; border: none; border-radius: 15px; color: white; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3); }
+        /* ReCaptcha style */
+        #recaptcha-container { margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="top"></div>
+
+<div class="bottom">
+    <div class="content">
+        <h3 class="title" id="mainTitle"><b>Enter Your Mobile Number</b></h3>
+
+        <div id="mobileSection">
+            <div class="input-container">
+                <span class="label-text">Mobile Number</span>
+                <span style="font-weight: 700; margin-right: 5px;">+91</span>
+                <input type="tel" id="phoneInput" placeholder="Enter number" maxlength="10">
+            </div>
+            <div id="recaptcha-container"></div>
+        </div>
+
+        <div id="otpSection">
+            <p style="text-align: center; font-size: 14px; color: #555;">Sent via SMS to +91 <span id="displayNum"></span></p>
+            <div class="input-container">
+                <span class="label-text">Enter OTP</span>
+                <input type="tel" id="otpInput" placeholder="6-digit OTP" maxlength="6">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="action-area">
+    <button id="mainBtn" onclick="handleAuth()">Continue</button>
+</div>
+
+<script>
+    // Tumcha actual Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyDgU0d_MxEFHGAJNLPakW6vR-xURI1g6fw",
+        authDomain: "ridefix-5a63c.firebaseapp.com",
+        projectId: "ridefix-5a63c",
+        storageBucket: "ridefix-5a63c.firebasestorage.app",
+        messagingSenderId: "42112930845",
+        appId: "1:42112930845:web:49ec66d4b5259a185722f4"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // ReCaptcha Setup (Invisible)
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        'size': 'invisible'
+    });
+
+    let confirmationResult;
+    let currentState = "MOBILE";
+
+    function handleAuth() {
+        const phoneInput = document.getElementById('phoneInput').value;
+        const otpInput = document.getElementById('otpInput').value;
+        const btn = document.getElementById('mainBtn');
+
+        if (currentState === "MOBILE") {
+            if (phoneInput.length === 10) {
+                const number = "+91" + phoneInput;
+                
+                auth.signInWithPhoneNumber(number, window.recaptchaVerifier)
+                    .then((result) => {
+                        confirmationResult = result;
+                        document.getElementById('mobileSection').style.display = 'none';
+                        document.getElementById('otpSection').style.display = 'block';
+                        document.getElementById('displayNum').innerText = phoneInput;
+                        document.getElementById('mainTitle').innerHTML = "<b>Verify OTP</b>";
+                        btn.innerText = "Verify & Login";
+                        currentState = "OTP";
+                        alert("OTP SMS dware pathvla aahe!");
+                    }).catch((error) => {
+                        console.error(error);
+                        alert("Error: " + error.message);
+                    });
+            } else {
+                alert("Please enter 10 digits.");
+            }
+        } else {
+            // OTP Verify kara
+            if (otpInput.length === 6) {
+                confirmationResult.confirm(otpInput)
+                    .then((result) => {
+                        alert("Login Successful! 🚀");
+                        window.location.href = "home.html";
+                    }).catch((error) => {
+                        alert("Chukicha OTP! Parat check kara.");
+                    });
+            } else {
+                alert("6-digit OTP taka.");
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
