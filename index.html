@@ -9,8 +9,7 @@
     
     <style>
         body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #000; height: 100vh; overflow: hidden; }
-        .top { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('bg.jpg') no-repeat center center/cover; z-index: 1; }
-        .top::after { content: ""; position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.4); }
+        .top { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1; }
         .bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: 80vh; background: white; border-radius: 30px 30px 0 0; padding: 30px 20px; box-sizing: border-box; z-index: 10; transform: translateY(0); animation: slideUp 0.6s ease-out; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .content { width: 100%; max-width: 380px; margin: 0 auto; }
@@ -21,9 +20,8 @@
         #otpSection { display: none; }
         .otp-input { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 15px; text-align: center; font-size: 22px; font-weight: 700; color: #1db954; outline: none; letter-spacing: 5px; }
         .action-area { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 380px; z-index: 20; }
-        button { width: 100%; padding: 16px; background: #1db954; border: none; border-radius: 15px; color: white; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3); transition: 0.3s; }
-        button:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
-        #recaptcha-container { margin-top: 10px; }
+        button { width: 100%; padding: 16px; background: #1db954; border: none; border-radius: 15px; color: white; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3); }
+        button:disabled { background: #ccc; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -39,7 +37,7 @@
                 <span class="label-text">Mobile Number</span>
                 <span style="font-size: 20px; margin-right: 8px;">🇮🇳</span>
                 <span style="font-weight: 700; margin-right: 5px;">+91</span>
-                <input type="tel" id="phoneInput" placeholder="7066xxxxxx" maxlength="10">
+                <input type="tel" id="phoneInput" placeholder="Enter number 11" maxlength="10">
             </div>
             <div id="recaptcha-container"></div>
         </div>
@@ -56,7 +54,7 @@
 </div>
 
 <script>
-    // तुमची नवीन Config (RideFix-Real)
+    // तुमची नवीन पडताळलेली Config
     const firebaseConfig = {
         apiKey: "AIzaSyClcel-N682oF2GZYT6UBcJ_NofMy1rTRA",
         authDomain: "ridefix-real.firebaseapp.com",
@@ -67,15 +65,14 @@
     };
 
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const auth = firebase.auth();
 
-    // ReCAPTCHA सेटअप - 'auth' पॅरामीटर जोडला आहे
+    // ReCAPTCHA सेटअप
     window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response) => {
-            console.log("reCAPTCHA solved");
-        }
+        'size': 'invisible'
     }, auth);
 
     let confirmationResult;
@@ -83,14 +80,14 @@
 
     function handleAuth() {
         const btn = document.getElementById('mainBtn');
-        const phoneValue = document.getElementById('phoneInput').value;
+        const phoneInput = document.getElementById('phoneInput').value;
         
         if (currentState === "MOBILE") {
-            if (phoneValue.length === 10) {
+            if (phoneInput.length === 10) {
                 btn.disabled = true;
-                btn.innerText = "Sending SMS...";
+                btn.innerText = "Processing...";
                 
-                const phone = "+91" + phoneValue;
+                const phone = "+91" + phoneInput;
                 const appVerifier = window.recaptchaVerifier;
 
                 auth.signInWithPhoneNumber(phone, appVerifier)
@@ -105,33 +102,28 @@
                     }).catch((error) => {
                         btn.disabled = false;
                         btn.innerText = "Continue";
-                        console.error("Auth Error:", error);
-                        alert("Error: " + error.message + "\n\nTip: Make sure India is 'Allowed' in SMS Region Policy.");
-                        // reCAPTCHA रिलोड करणे जर एरर आला तर
-                        window.recaptchaVerifier.render().then(function(widgetId) {
-                            grecaptcha.reset(widgetId);
-                        });
+                        console.error(error);
+                        alert("Error: " + error.message + "\n\nTry opening in Incognito Mode and check if India is 'Allowed' in SMS Settings.");
                     });
             } else {
-                alert("Please enter a valid 10-digit number.");
+                alert("Please enter 10 digit number.");
             }
         } else {
             const otp = document.getElementById('otpInput').value;
             if (otp.length === 6) {
                 btn.disabled = true;
                 btn.innerText = "Verifying...";
-                
                 confirmationResult.confirm(otp)
                     .then(() => {
-                        alert("Login Successful! 🚀");
+                        alert("Login Success! 🚀");
                         window.location.href = "home.html";
                     }).catch((error) => {
                         btn.disabled = false;
                         btn.innerText = "Verify & Login";
-                        alert("Wrong OTP! Please check and try again.");
+                        alert("Wrong OTP! Try again.");
                     });
             } else {
-                alert("Please enter 6-digit OTP.");
+                alert("Please enter 6 digit OTP.");
             }
         }
     }
@@ -139,4 +131,3 @@
 
 </body>
 </html>
-
